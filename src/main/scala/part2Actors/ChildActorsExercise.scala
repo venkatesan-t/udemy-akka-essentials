@@ -24,8 +24,8 @@ object ChildActorsExercise extends App {
 
   object WordCounterMaster {
     case class Initialize(nChildren: Int)
-    case class WordCountTask(text: String)
-    case class WordCountReply(text: String, count: Int)
+    case class WordCountTask(taskId: Int, text: String)
+    case class WordCountReply(taskId: Int, count: Int)
   }
 
   class WordCounterMaster extends Actor {
@@ -35,19 +35,21 @@ object ChildActorsExercise extends App {
       case Initialize(n) =>
         println(s"${self.path} - got n - $n")
         val workers: Array[ActorRef] = (1 to n).
-          map(i => system.actorOf(Props[WordCounterWorker], s"${i}WordCounterWorker")).toArray
-        context.become(initializeReceive(sender(), workers, 0))
+          map(i => context.actorOf(Props[WordCounterWorker], s"wordCounterWorker_$i")).toArray
+        context.become(withChildren(Map(), workers, 0))
     }
 
-    def initializeReceive(client: ActorRef, workers: Array[ActorRef], taskNum: Int): Receive = {
-      case WordCountTask(str) =>
+    def withChildren(clientTaskMap: Map[Int, ActorRef], workers: Array[ActorRef], taskNum: Int): Receive = {
+      case str: String =>
         val workerNum = taskNum % workers.length
 //        println(s"${self.path} - taskNum - $taskNum - workerNum - $workerNum - str - $str")
-        workers(workerNum) ! WordCountTask(str)
-        context.become(initializeReceive(client, workers, taskNum + 1))
-      case WordCountReply(text, count) =>
+        workers(workerNum) ! WordCountTask(taskNum, str)
+        val newClientTaskMap = clientTaskMap + (taskNum -> sender())
+        context.become(withChildren(newClientTaskMap, workers, taskNum + 1))
+      case WordCountReply(taskId, count) =>
 //        println(s"${self.path} - WordCountReply - cnt - $count")
-        client ! WordCountReply(text, count)
+        client ! WordCountReply(taskId, count)
+        context.become(withChildren(clientTaskMap - taskNum, workers, taskNum))
       case msg => s"${self.path} - ${msg.toString}"
 
     }
@@ -57,9 +59,9 @@ object ChildActorsExercise extends App {
     import WordCounterMaster._
 
     override def receive: Receive = {
-      case WordCountTask(text) =>
+      case WordCountTask(id, text) =>
 //        println(s"${self.path} - taskNum - text - $text")
-        sender() ! WordCountReply(text, text.split(" ").length)
+        sender() ! WordCountReply(id, text.split(" ").length)
       case msg => s"${self.path} - ${msg.toString}"
     }
   }
@@ -74,16 +76,16 @@ object ChildActorsExercise extends App {
     override def receive: Receive = {
       case StartProcess =>
         val master = system.actorOf(Props[WordCounterMaster], "wordCounterMaster")
-        master ! Initialize(5)
-        master ! WordCountTask("Akka is awesome!")
-        master ! WordCountTask("Learning it!")
-        master ! WordCountTask("Learning it 2!")
-        master ! WordCountTask("Learning it 3 3!")
-        master ! WordCountTask("Learning it 4 4 4!")
-        master ! WordCountTask("Learning it 5 5 5 5!")
-        master ! WordCountTask("Learning it 6 6 6 6 6!")
-      case WordCountReply(text, num) =>
-        println(s"${self.path} - text - $text - len - $num")
+        master ! Initialize(3)
+        master ! "Akka is awesome!"
+        master ! "Learning it!"
+        master ! "Learning it 2!"
+        master ! "Learning it 3 3!"
+        master ! "Learning it 4 4 4!"
+        master ! "Learning it 5 5 5 5!"
+        master ! "Learning it 6 6 6 6 6!"
+      case WordCountReply(taskId, num) =>
+        println(s"${self.path} - taskId - $taskId - len - $num")
     }
   }
 
