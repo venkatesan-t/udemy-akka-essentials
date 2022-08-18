@@ -1,1 +1,1 @@
-Akka is awesome1
+Akka is awesome!
