@@ -3,7 +3,7 @@ package part3testing
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{BeforeAndAfterAll, OneInstancePerTest}
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.Random
