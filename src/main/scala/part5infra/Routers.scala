@@ -63,7 +63,7 @@ object Routers extends App {
   val poolMasterFromConfigSystem = ActorSystem("RoutersDemo", ConfigFactory.load().getConfig("routersDemo"))
   val pooMaster2 = poolMasterFromConfigSystem.actorOf(FromConfig.props(Props[Slave]), "poolMaster2")
 //  for (i <- 1 to 10) {
-//    poolMaster ! s"[$i] Hello from the world"
+//    poolMaster2 ! s"[$i] Hello from the world"
 //  }
 
   /*
